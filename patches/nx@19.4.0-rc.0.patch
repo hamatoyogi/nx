@@ -1,0 +1,36 @@
+diff --git a/src/plugins/js/utils/register.js b/src/plugins/js/utils/register.js
+index af48d1a25109755ac1e93cb237d6e48314936242..8be0835802e2217ca27e8bdf6f7cac6bb923f538 100644
+--- a/src/plugins/js/utils/register.js
++++ b/src/plugins/js/utils/register.js
+@@ -41,7 +41,16 @@ function getSwcTranspiler(compilerOptions) {
+     return typeof cleanupFn === 'function' ? cleanupFn : () => { };
+ }
+ exports.getSwcTranspiler = getSwcTranspiler;
++
++const registered = new Set();
++
+ function getTsNodeTranspiler(compilerOptions, tsNodeOptions) {
++
++    const registrationKey = JSON.stringify(compilerOptions);
++    if (registered.has(registrationKey)) {
++        return () => {};
++    }
++
+     const { register } = require('ts-node');
+     // ts-node doesn't provide a cleanup method
+     const service = register({
+@@ -50,13 +59,13 @@ function getTsNodeTranspiler(compilerOptions, tsNodeOptions) {
+         // we already read and provide the compiler options, so prevent ts-node from reading them again
+         skipProject: true,
+     });
++    registered.add(registrationKey);
+     const { transpiler, swc } = service.options;
+     // Don't warn if a faster transpiler is enabled
+     if (!transpiler && !swc) {
+         warnTsNodeUsage();
+     }
+     return () => {
+-        service.enabled(false);
+     };
+ }
+ exports.getTsNodeTranspiler = getTsNodeTranspiler;
